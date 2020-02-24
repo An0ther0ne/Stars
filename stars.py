@@ -8,6 +8,8 @@ import cv2
 import numpy as np
 from math import sin, sqrt, pi
 
+DEBUG = True
+
 class Star:
 	def __genstar01__(self, R):
 		self.fi = 2*pi*np.random.random()
@@ -42,14 +44,20 @@ class Star:
 		self.speed += self.speed / 350
 
 class Screen:
-	Caption = "Through the Universe"
-	width  = 960
-	height = 540
-	totalstars	= 350
-	FullScreen  = 0
+	Caption 		= "Through the Universe"
+	videofilename	= 'Stars.avi'
+	videocodec 		= 'MJPG'
+	FPS      		= 30
+	frames			= 0
+	width  			= 960
+	height 			= 540
+	totalstars	 	= 350
+	FullScreen   	= 0
+	CaptureVideo 	= False
 	def __init__(self):
 		self.screen = np.zeros((self.height, self.width, 3), dtype="uint8")
 		self.stars = []
+		self.fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
 		for i in range(self.totalstars):
 			self.stars.append(Star(self.width, self.height))
 	def Move(self):
@@ -87,6 +95,14 @@ class Screen:
 	def SwitchToFullScreen(self):
 		# self.FullScreen = (self.FullScreen + 1) % 3
 		self.FullScreen = (self.FullScreen + 1) % 2
+	def StartStopRecord(self):
+		self.CaptureVideo = not self.CaptureVideo
+		if self.CaptureVideo:
+			if DEBUG: print("+++ Start Record video to file:", self.videofilename)
+			self.video = cv2.VideoWriter(self.videofilename, self.fourcc, float(self.FPS), (self.width, self.height))
+		else:
+			if DEBUG: print("+++ Stop Record video")
+			self.video.release()
 	def Show(self):
 		self.DrawStars()
 		if self.FullScreen == 0:		# original window size
@@ -101,6 +117,11 @@ class Screen:
 			cv2.namedWindow(self.Caption, cv2.WINDOW_NORMAL)
 			cv2.setWindowProperty(self.Caption,cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)						
 		cv2.imshow(self.Caption, self.screen)
+		if self.CaptureVideo: # Record each 4th frame
+			self.frames += 1
+			if self.frames & 3 == 0:
+				self.video.write(self.screen)
+			
 
 
 screen = Screen()
@@ -110,7 +131,9 @@ while True:
 	key = cv2.waitKey(1) & 0xFF
 	if  key | 0x20 == ord('q') or key == 27: 	# 'q' or 'Q ' or 'ESC'
 		break
-	elif key == 13:								#Enter key
+	if  key | 0x20 == ord('r'): 				# 'r' -> RecordVideo
+		screen.StartStopRecord()
+	elif key == 13:								# Enter key
 		screen.SwitchToFullScreen()
 cv2.destroyAllWindows()	
 
