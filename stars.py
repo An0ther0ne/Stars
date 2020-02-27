@@ -2,13 +2,14 @@
 '''Control keys:
 	'Q' or ESC: 	Close window and exit
 	'Enter':		Switch to Full screen mode
+	'R'    :		Start/Stop Record every 4th frame to the video file
 '''
 
 import cv2
 import numpy as np
 from math import sin, sqrt, pi
 
-DEBUG = True
+DEBUG = False
 
 class Star:
 	def __genstar01__(self, R):
@@ -76,22 +77,16 @@ class Screen:
 				self.screen[y,x] = star.color3
 			elif star.speed < 0.25:
 				self.screen[y,x] = star.color2
-			else:
+			elif star.speed < 0.5:
 				self.screen[y,x] = star.color
-			if star.speed > 0.75:
-				self.screen[y-1,x] = star.color2
-				self.screen[y+1,x] = star.color2
-				self.screen[y,x-1] = star.color2
-				self.screen[y,x+1] = star.color2
-				self.screen[y-1,x-1] = star.color3
-				self.screen[y+1,x+1] = star.color3
-				self.screen[y-1,x+1] = star.color3
-				self.screen[y+1,x-1] = star.color3
+			elif star.speed > 0.75:
+				self.screen[y-1,x-1:x+2] = [star.color3, star.color2, star.color3]
+				self.screen[y,  x-1:x+2] = [star.color2, star.color, star.color2]
+				self.screen[y+1,x-1:x+2] = [star.color3, star.color2, star.color3]
 			elif star.speed > 0.5:
 				self.screen[y-1,x] = star.color3
+				self.screen[y,x-1:x+2] = [star.color3, star.color, star.color3]
 				self.screen[y+1,x] = star.color3
-				self.screen[y,x-1] = star.color3
-				self.screen[y,x+1] = star.color3
 	def SwitchToFullScreen(self):
 		# self.FullScreen = (self.FullScreen + 1) % 3
 		self.FullScreen = (self.FullScreen + 1) % 2
