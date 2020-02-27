@@ -1,15 +1,16 @@
 ﻿#-*- coding: utf-8 -*-
 '''Control keys:
 	'Q' or ESC: 	Close window and exit
-	'Enter':		Switch to Full screen mode
-	'R'    :		Start/Stop Record every 4th frame to the video file
+	'Enter'	  :		Switch to Full screen mode
+	'R'       :		Start/Stop Record every 4th frame to the video file
+	'I'	      : 	Invert screen colors
 '''
 
 import cv2
 import numpy as np
 from math import sin, sqrt, pi
 
-DEBUG = False
+DEBUG = True
 
 class Star:
 	def __genstar01__(self, R):
@@ -53,14 +54,34 @@ class Screen:
 	width  			= 960
 	height 			= 540
 	totalstars	 	= 350
-	FullScreen   	= 0
-	CaptureVideo 	= False
+	_FullScreen 	= 0
+	_CaptureVideo 	= False
+	_InvertColors	= False
+	
 	def __init__(self):
 		self.screen = np.zeros((self.height, self.width, 3), dtype="uint8")
 		self.stars = []
 		self.fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
 		for i in range(self.totalstars):
 			self.stars.append(Star(self.width, self.height))
+	def InvertColors(self):
+		self._InvertColors = ~self._InvertColors
+	def SetFullScreen(self):
+		# self.FullScreen = (self.FullScreen + 1) % 3
+		self._FullScreen = (self._FullScreen + 1) % 2		
+	def StartStopRecord(self):
+		self._CaptureVideo = not self._CaptureVideo
+		if self._CaptureVideo:
+			if DEBUG: print("+++ Start Record video to file:", self.videofilename, flush=True)
+			self.video = cv2.VideoWriter(self.videofilename, self.fourcc, float(self.FPS), (self.width, self.height))
+		else:
+			if DEBUG: print("+++ Stop Record video", flush=True)
+			self.video.release()		
+			
+	InvertColors 	= property(InvertColors)
+	FullScreen  	= property(SetFullScreen)
+	CaptureVideo	= property(StartStopRecord)
+	
 	def Move(self):
 		for i in range(len(self.stars)):
 			self.stars[i].Move()
@@ -87,24 +108,15 @@ class Screen:
 				self.screen[y-1,x] = star.color3
 				self.screen[y,x-1:x+2] = [star.color3, star.color, star.color3]
 				self.screen[y+1,x] = star.color3
-	def SwitchToFullScreen(self):
-		# self.FullScreen = (self.FullScreen + 1) % 3
-		self.FullScreen = (self.FullScreen + 1) % 2
-	def StartStopRecord(self):
-		self.CaptureVideo = not self.CaptureVideo
-		if self.CaptureVideo:
-			if DEBUG: print("+++ Start Record video to file:", self.videofilename)
-			self.video = cv2.VideoWriter(self.videofilename, self.fourcc, float(self.FPS), (self.width, self.height))
-		else:
-			if DEBUG: print("+++ Stop Record video")
-			self.video.release()
+		if self._InvertColors: 
+			self.screen = cv2.bitwise_not(self.screen)
 	def Show(self):
 		self.DrawStars()
-		if self.FullScreen == 0:		# original window size
+		if self._FullScreen == 0:		# original window size
 			cv2.namedWindow(self.Caption, cv2.WINDOW_NORMAL)
 			cv2.setWindowProperty(self.Caption,cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
 			cv2.resizeWindow(self.Caption, self.width, self.height)	
-		#~ elif self.FullScreen == 1:		# double window size
+		#~ elif self._FullScreen == 1:		# double window size
 			#~ cv2.namedWindow(self.Caption, cv2.WINDOW_NORMAL)
 			#~ cv2.setWindowProperty(self.Caption,cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
 			#~ cv2.resizeWindow(self.Caption, 2*self.width, 2*self.height)	# original scale # double scale
@@ -112,12 +124,10 @@ class Screen:
 			cv2.namedWindow(self.Caption, cv2.WINDOW_NORMAL)
 			cv2.setWindowProperty(self.Caption,cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)						
 		cv2.imshow(self.Caption, self.screen)
-		if self.CaptureVideo: # Record each 4th frame
+		if self._CaptureVideo: # Record each 4th frame
 			self.frames += 1
 			if self.frames & 3 == 0:
 				self.video.write(self.screen)
-			
-
 
 screen = Screen()
 while True:
@@ -125,10 +135,14 @@ while True:
 	screen.Show()
 	key = cv2.waitKey(1) & 0xFF
 	if  key | 0x20 == ord('q') or key == 27: 	# 'q' or 'Q ' or 'ESC'
+		if screen._CaptureVideo:
+			screen.CaptureVideo					# Stop recording video
 		break
-	if  key | 0x20 == ord('r'): 				# 'r' -> RecordVideo
-		screen.StartStopRecord()
-	elif key == 13:								# Enter key
-		screen.SwitchToFullScreen()
+	if  key | 0x20 == ord('r'):
+		screen.CaptureVideo
+	if  key | 0x20 == ord('i'):
+		screen.InvertColors
+	elif key == 13:
+		screen.FullScreen
 cv2.destroyAllWindows()	
 

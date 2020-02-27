@@ -3,6 +3,7 @@ Realization of a very famous screensaver "through the Universe" using Python, Op
 Purpose: to test the performance of random access to an array elements in this bundle.
 
 ![stars](img/stars.gif)
+![stars inverted](img/starsw.gif)
 
 ## Control keys:
 
@@ -12,6 +13,7 @@ Purpose: to test the performance of random access to an array elements in this b
 | ESC | The same as 'Q' |
 |Enter | Switch to Full screen mode |
 | R/r | Start/Stop record video to Stars.avi file. Recorded each 4th frame. |
+| I/i | Invert all screen colors |
 
 ## Files:
 	
